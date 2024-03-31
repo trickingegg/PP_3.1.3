@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import ru.kata.spring.boot_security.demo.exceptions.DuplicateUsernameException;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.RoleService;
@@ -61,11 +62,20 @@ public class AdminController {
 
     @PostMapping("/createUser")
     public String createUser(@ModelAttribute("user") User user,
-                             @RequestParam("role") String roleName) {
-        Set<Role> roles = new HashSet<>();
-        roles.add(roleService.findByName(roleName));
-        user.setRoles(roles);
-        userService.add(user);
+                             @RequestParam("role") List<String> roleName, Model model) {
+        try {
+            Set<Role> roles = new HashSet<>();
+            for (String roleNames : roleName) {
+                roles.add(roleService.findByName(roleNames));
+            }
+            user.setRoles(roles);
+            userService.add(user);
+        } catch (DuplicateUsernameException ex) {
+            model.addAttribute("user", user);
+            model.addAttribute("roleList", roleService.allRoles());
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "admin/createUser";
+        }
         return "redirect:/admin/userlist";
     }
 
