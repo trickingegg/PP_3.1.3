@@ -1,14 +1,17 @@
 package ru.kata.spring.boot_security.demo.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.kata.spring.boot_security.demo.exceptions.DuplicateUsernameException;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repository.UserRepository;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +35,10 @@ public class UserServiceImp implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public void add(User user) {
+    public void add(User user) throws DuplicateUsernameException {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new DuplicateUsernameException("Username '" + user.getUsername() + "' is already taken.");
+        }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
@@ -45,9 +51,15 @@ public class UserServiceImp implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public void update(User user) {
+    public void update(User user) throws DuplicateUsernameException {
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        userRepository.findById(user.getId()).orElseThrow(() ->
+                new UsernameNotFoundException("No user found with id: " + user.getId()));
+        Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
+        if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
+            throw new DuplicateUsernameException("Username '" + user.getUsername() + "' is already taken.");
         }
         userRepository.save(user);
     }
