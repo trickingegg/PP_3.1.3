@@ -31,12 +31,14 @@
         <input type="password" id="password" th:field="*{password}" placeholder="Password" required>
 
         <div>
-            <label for="roles">Roles</label>
-            <select id="roles" th:field="*{roles}" multiple required>
-                <option th:each="role : ${roleList}" th:value="${role.id}" th:text="${role.name}" th:selected="${user.roles.contains(role)}">Role Name</option>
+            <label for="role">Roles</label>
+            <select id="role" name="role" required multiple="multiple">
+                <option th:each="role : ${roleList}" th:value="${role.name}" th:text="${role.name}">Role Name</option>
             </select>
         </div>
-
+        <div th:if="${not #strings.isEmpty(errorMessage)}">
+            <p th:text="${errorMessage}" class="error">Error message</p>
+        </div>
         <button type="submit">Save Changes</button>
     </form>
     <form th:action="@{/logout}" method="post">

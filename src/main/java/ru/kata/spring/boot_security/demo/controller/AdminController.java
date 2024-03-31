@@ -87,8 +87,21 @@ public class AdminController {
     }
 
     @PostMapping("/updateUser")
-    public String updateUser(@ModelAttribute("user") User user) {
-        userService.update(user);
+    public String updateUser(@ModelAttribute("user") User user,
+                             @RequestParam("role") List<String> roleName, Model model) {
+        try {
+            Set<Role> roles = new HashSet<>();
+            for (String roleNames : roleName) {
+                roles.add(roleService.findByName(roleNames));
+            }
+            user.setRoles(roles);
+            userService.update(user);
+        } catch (DuplicateUsernameException ex) {
+            model.addAttribute("user", user);
+            model.addAttribute("roleList", roleService.allRoles());
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "admin/updateUser";
+        }
         return "redirect:/admin/userlist";
     }
 }
